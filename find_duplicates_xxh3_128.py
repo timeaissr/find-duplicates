@@ -6,6 +6,8 @@ import argparse  # 用于解析命令行参数
 from collections import defaultdict
 from pathlib import Path
 import xxhash
+import json
+import csv
 
 def get_char_width(char):
     """获取单个字符在终端中的视觉宽度（中文占2列，英文占1列）"""
@@ -47,7 +49,51 @@ def pad_to_visual_width(text, target_width):
         return text + " " * (target_width - current_width)
     return text
 
-def find_duplicates(include_dirs, exclude_dirs):
+def write_results_to_file(output_path, duplicates, elapsed_time, total_files, include_dirs):
+    """将查重结果写入到指定的文件，支持 TXT, JSON, CSV 格式。"""
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    suffix = path.suffix.lower()
+    
+    if suffix == '.json':
+        data = {
+            "summary": {
+                "scan_time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                "elapsed_seconds": round(elapsed_time, 2),
+                "total_files": total_files,
+                "duplicate_groups": len(duplicates),
+                "scan_folders": [str(Path(d).resolve()) for d in include_dirs]
+            },
+            "duplicates": duplicates
+        }
+        with path.open('w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            
+    elif suffix == '.csv':
+        with path.open('w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Group", "Hash", "FilePath"])
+            for group_idx, (hsh, paths) in enumerate(duplicates.items(), start=1):
+                for file_path in paths:
+                    writer.writerow([group_idx, hsh, file_path])
+                    
+    elif suffix == '.txt':
+        with path.open('w', encoding='utf-8') as f:
+            f.write(f"扫描时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n")
+            f.write(f"扫描目录: {', '.join(str(Path(d).resolve()) for d in include_dirs)}\n")
+            if not duplicates:
+                f.write("扫描完成：未发现内容重复的文件。\n")
+            else:
+                f.write(f"扫描完成：共发现 {len(duplicates)} 组重复文件。\n")
+                f.write("==========================================\n")
+                for hsh, paths in duplicates.items():
+                    f.write(f"\n哈希值 (XXH3-128): {hsh}\n")
+                    for file_path in paths:
+                        f.write(f"  - {file_path}\n")
+                f.write("==========================================\n")
+            f.write(f"执行总耗时: {elapsed_time:.2f} 秒\n")
+
+def find_duplicates(include_dirs, exclude_dirs, output_paths=None):
     """
     遍历多个指定的包含文件夹及其子文件夹，通过计算 XXH3-128 哈希值来查找内容完全相同的文件。
     支持排除指定的文件夹，进度条和文件名长度会根据当前终端窗口大小动态调整。
@@ -91,6 +137,9 @@ def find_duplicates(include_dirs, exclude_dirs):
     total_files = len(file_list)
     if total_files == 0:
         print("未找到任何有效文件。")
+        if output_paths:
+            for out_path in output_paths:
+                write_results_to_file(out_path, {}, 0.0, 0, include_dirs)
         return
 
     print(f"共找到 {total_files} 个文件。开始计算哈希值...")
@@ -169,6 +218,9 @@ def find_duplicates(include_dirs, exclude_dirs):
     if not duplicates:
         print("\n扫描完成：未发现内容重复的文件。")
         print(f"执行总耗时: {elapsed_time:.2f} 秒")
+        if output_paths:
+            for out_path in output_paths:
+                write_results_to_file(out_path, {}, elapsed_time, total_files, include_dirs)
         return
 
     print(f"\n扫描完成：共发现 {len(duplicates)} 组重复文件。")
@@ -180,6 +232,10 @@ def find_duplicates(include_dirs, exclude_dirs):
     print("==========================================")
     
     print(f"执行总耗时: {elapsed_time:.2f} 秒")
+
+    if output_paths:
+        for out_path in output_paths:
+            write_results_to_file(out_path, duplicates, elapsed_time, total_files, include_dirs)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="使用 XXH3-128 算法在多个文件夹中查找内容重复的文件。")
@@ -200,10 +256,26 @@ if __name__ == "__main__":
         help="要排除的文件夹路径（若有多个，请多次使用 -e 或 --exclude）"
     )
     
+    # 增加 -o / --output，表示指定输出文件，支持多次使用同时输出多种格式
+    parser.add_argument(
+        "-o", "--output",
+        action="append",
+        default=None,
+        help="指定输出文件路径，可多次指定以输出多种格式。后缀必须是 .txt, .json, .csv 之一（强制校验，不区分大小写）"
+    )
+    
     args = parser.parse_args()
     
     includes = args.include if args.include else []
     excludes = args.exclude if args.exclude else []
+    outputs = args.output if args.output else []
     
+    # 强制校验输出路径的后缀
+    for out in outputs:
+        p = Path(out)
+        suffix = p.suffix.lower()
+        if suffix not in ('.txt', '.json', '.csv'):
+            parser.error(f"不支持的输出文件格式: '{out}'。后缀必须是 .txt, .json, .csv 之一。")
+            
     # 执行查重主程序
-    find_duplicates(includes, excludes)
+    find_duplicates(includes, excludes, outputs)
