@@ -36,6 +36,9 @@ python find_duplicates_xxh3_128.py -i /path/to/dir1 -i /path/to/dir2
 
 # 排除指定目录
 python find_duplicates_xxh3_128.py -i /path/to/dir -e /path/to/dir/node_modules -e /path/to/dir/.git
+
+# 启用 SQLite 增量扫描缓存（大幅减少磁盘读取开销，极大提高重复扫描速度）
+python find_duplicates_xxh3_128.py -i /path/to/dir --cache-file cache.db
 ```
 
 ### 参数说明
@@ -44,6 +47,8 @@ python find_duplicates_xxh3_128.py -i /path/to/dir -e /path/to/dir/node_modules 
 |------|------|
 | `-i`, `--include` | 要扫描的文件夹路径，可多次使用 |
 | `-e`, `--exclude` | 要排除的文件夹路径，可多次使用 |
+| `-o`, `--output` | 指定输出文件路径，支持多次指定输出不同格式，必须以 .txt, .json, .csv 结尾 |
+| `--cache-file` | 指定 SQLite 缓存文件路径。若不指定，则不启用缓存（退化为完全物理扫描） |
 
 ## 输出示例
 
