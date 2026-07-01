@@ -1,7 +1,21 @@
 [project]
 name = "find-duplicates"
-version = "0.4.0"
+version = "0.5.0"
 requires-python = ">=3.12"
 dependencies = [
     "xxhash>=3.8.0",
+    "rich>=13.7.0",
+]
+
+[project.scripts]
+find-duplicates = "find_duplicates.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "src"
 ]
