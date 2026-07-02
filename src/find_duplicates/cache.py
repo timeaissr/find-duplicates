@@ -21,18 +21,33 @@ class FileCache:
     def _init_db(self):
         if not self.conn:
             return
-        with self.conn:
-            self.conn.execute("""
-                CREATE TABLE IF NOT EXISTS file_cache (
-                    filepath TEXT PRIMARY KEY,
-                    size INTEGER,
-                    mtime REAL,
-                    hash TEXT
-                )
-            """)
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("PRAGMA table_info(file_cache)")
+            columns = {row[1] for row in cursor.fetchall()}
+            
+            expected_columns = {"filepath", "size", "mtime", "hash", "algorithm"}
+            
+            if columns != expected_columns:
+                with self.conn:
+                    self.conn.execute("DROP TABLE IF EXISTS file_cache")
+                    self.conn.execute("""
+                        CREATE TABLE file_cache (
+                            filepath TEXT PRIMARY KEY,
+                            size INTEGER,
+                            mtime REAL,
+                            hash TEXT,
+                            algorithm TEXT
+                        )
+                    """)
+        except sqlite3.Error as e:
+            print(
+                f"[警告] 无法初始化缓存数据库: {e}，将无法使用缓存功能。",
+                file=sys.stderr,
+            )
 
-    def get_hash(self, filepath: Path) -> str | None:
-        """从缓存中检索哈希值，如果文件未修改则返回哈希，否则返回 None。"""
+    def get_hash(self, filepath: Path, algorithm: str) -> str | None:
+        """从缓存中检索哈希值，如果文件未修改且算法匹配则返回哈希，否则返回 None。"""
         if not self.conn:
             return None
         try:
@@ -43,8 +58,8 @@ class FileCache:
 
             cursor = self.conn.cursor()
             cursor.execute(
-                "SELECT size, mtime, hash FROM file_cache WHERE filepath = ?",
-                (normalized_path,),
+                "SELECT size, mtime, hash FROM file_cache WHERE filepath = ? AND algorithm = ?",
+                (normalized_path, algorithm),
             )
             row = cursor.fetchone()
             if row:
@@ -59,8 +74,8 @@ class FileCache:
             pass
         return None
 
-    def update_hash(self, filepath: Path, file_hash: str):
-        """将文件的当前状态和哈希值更新到数据库缓存中。"""
+    def update_hash(self, filepath: Path, file_hash: str, algorithm: str):
+        """将文件的当前状态、哈希值和算法更新到数据库缓存中。"""
         if not self.conn:
             return
         try:
@@ -68,8 +83,8 @@ class FileCache:
             normalized_path = filepath.resolve().as_posix()
             with self.conn:
                 self.conn.execute(
-                    "INSERT OR REPLACE INTO file_cache (filepath, size, mtime, hash) VALUES (?, ?, ?, ?)",
-                    (normalized_path, stat.st_size, stat.st_mtime, file_hash),
+                    "INSERT OR REPLACE INTO file_cache (filepath, size, mtime, hash, algorithm) VALUES (?, ?, ?, ?, ?)",
+                    (normalized_path, stat.st_size, stat.st_mtime, file_hash, algorithm),
                 )
         except (OSError, sqlite3.Error):
             pass

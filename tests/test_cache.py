@@ -25,23 +25,23 @@ def test_cache_get_and_update(cache_db, tmp_path):
     file_path.write_text("hello world")
 
     # 初始状态：未缓存
-    assert cache_db.get_hash(file_path) is None
+    assert cache_db.get_hash(file_path, "xxh3") is None
 
     # 缓存哈希
     test_hash = "5ad9cbcd"
-    cache_db.update_hash(file_path, test_hash)
+    cache_db.update_hash(file_path, test_hash, "xxh3")
 
     # 命中缓存
-    assert cache_db.get_hash(file_path) == test_hash
+    assert cache_db.get_hash(file_path, "xxh3") == test_hash
 
     # 改变文件大小 -> 缓存失效
     file_path.write_text("hello world extra")
-    assert cache_db.get_hash(file_path) is None
+    assert cache_db.get_hash(file_path, "xxh3") is None
 
     # 更新新状态下的缓存
     new_hash = "a49d4dd3"
-    cache_db.update_hash(file_path, new_hash)
-    assert cache_db.get_hash(file_path) == new_hash
+    cache_db.update_hash(file_path, new_hash, "xxh3")
+    assert cache_db.get_hash(file_path, "xxh3") == new_hash
 
     # 改变修改时间 -> 缓存失效
     # 我们通过修改文件时间属性模拟
@@ -52,7 +52,7 @@ def test_cache_get_and_update(cache_db, tmp_path):
     import os
 
     os.utime(file_path, (past_mtime, past_mtime))
-    assert cache_db.get_hash(file_path) is None
+    assert cache_db.get_hash(file_path, "xxh3") is None
 
 
 def test_cache_prune_stale_records(cache_db, tmp_path):
@@ -68,14 +68,14 @@ def test_cache_prune_stale_records(cache_db, tmp_path):
     f2.write_text("2")
     f3.write_text("3")
 
-    cache_db.update_hash(f1, "hash1")
-    cache_db.update_hash(f2, "hash2")
-    cache_db.update_hash(f3, "hash3")
+    cache_db.update_hash(f1, "hash1", "xxh3")
+    cache_db.update_hash(f2, "hash2", "xxh3")
+    cache_db.update_hash(f3, "hash3", "xxh3")
 
     # 检验全部缓存成功
-    assert cache_db.get_hash(f1) == "hash1"
-    assert cache_db.get_hash(f2) == "hash2"
-    assert cache_db.get_hash(f3) == "hash3"
+    assert cache_db.get_hash(f1, "xxh3") == "hash1"
+    assert cache_db.get_hash(f2, "xxh3") == "hash2"
+    assert cache_db.get_hash(f3, "xxh3") == "hash3"
 
     # 清理非活跃记录
     # 如果扫描 include_dirs = [tmp_path]
@@ -84,8 +84,55 @@ def test_cache_prune_stale_records(cache_db, tmp_path):
     cache_db.prune_stale_records([str(tmp_path)], [f1, f3])
 
     # f1, f3 仍在缓存中
-    assert cache_db.get_hash(f1) == "hash1"
-    assert cache_db.get_hash(f3) == "hash3"
+    assert cache_db.get_hash(f1, "xxh3") == "hash1"
+    assert cache_db.get_hash(f3, "xxh3") == "hash3"
 
     # f2 被清理了，就算文件本身没变，再次调用 get_hash 也应当因为缓存表中无记录而返回 None
-    assert cache_db.get_hash(f2) is None
+    assert cache_db.get_hash(f2, "xxh3") is None
+
+
+def test_cache_schema_validation_and_recreate(tmp_path):
+    import sqlite3
+    db_file = tmp_path / "test_recreate.db"
+    
+    # 模拟旧版本没有 algorithm 字段的表结构
+    conn = sqlite3.connect(str(db_file))
+    with conn:
+        conn.execute("CREATE TABLE file_cache (filepath TEXT PRIMARY KEY, size INTEGER, mtime REAL, hash TEXT)")
+        conn.execute("INSERT INTO file_cache VALUES ('test_path', 10, 1.0, 'old_hash')")
+    conn.close()
+
+    # 实例化 FileCache，应当触发 DROP 表并重新创建表结构
+    cache = FileCache(str(db_file))
+    cursor = cache.conn.cursor()
+    cursor.execute("PRAGMA table_info(file_cache)")
+    columns = {row[1] for row in cursor.fetchall()}
+    assert columns == {"filepath", "size", "mtime", "hash", "algorithm"}
+    
+    # 确认旧数据已经被清空
+    cursor.execute("SELECT COUNT(*) FROM file_cache")
+    assert cursor.fetchone()[0] == 0
+    cache.close()
+
+
+def test_cache_algorithm_isolation(cache_db, tmp_path):
+    file_path = tmp_path / "iso_file.txt"
+    file_path.write_text("isolate")
+
+    # 写入 xxh3 缓存
+    cache_db.update_hash(file_path, "xxh3_hash_val", "xxh3")
+    
+    # 当读取 blake3 时，应当隔离并返回 None
+    assert cache_db.get_hash(file_path, "blake3") is None
+
+    # 读取 xxh3 时，可以正常命中
+    assert cache_db.get_hash(file_path, "xxh3") == "xxh3_hash_val"
+
+    # 写入 blake3 缓存
+    cache_db.update_hash(file_path, "blake3_hash_val", "blake3")
+
+    # 读取 blake3 时，命中新值
+    assert cache_db.get_hash(file_path, "blake3") == "blake3_hash_val"
+    # 读取 xxh3 时，由于 PRIMARY KEY 覆盖，旧的已不存在
+    assert cache_db.get_hash(file_path, "xxh3") is None
+
