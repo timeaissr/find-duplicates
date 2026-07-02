@@ -5,7 +5,7 @@
   <title>重复文件清理控制台</title>
   <style>
     :root {
-      --bg-dark: #121214;
+      --bg-body: #121214;
       --bg-card: rgba(30, 30, 38, 0.6);
       --border-color: rgba(255, 255, 255, 0.08);
       --text-main: #e4e4e7;
@@ -13,10 +13,37 @@
       --color-primary: #3b82f6;
       --color-success: #10b981;
       --color-danger: #ef4444;
+      --bg-sidebar-stat: rgba(255, 255, 255, 0.03);
+      --bg-select: #27272a;
+      --border-select: #3f3f46;
+      --bg-group-header: rgba(255, 255, 255, 0.02);
+      --border-file-item: rgba(255, 255, 255, 0.04);
+      --bg-action-bar: rgba(20, 20, 25, 0.9);
+      --bg-action-toggle: #27272a;
+      --border-action-toggle: #3f3f46;
+    }
+
+    [data-theme="light"] {
+      --bg-body: #f4f4f5;
+      --bg-card: rgba(255, 255, 255, 0.85);
+      --border-color: rgba(0, 0, 0, 0.08);
+      --text-main: #18181b;
+      --text-dim: #71717a;
+      --color-primary: #2563eb;
+      --color-success: #059669;
+      --color-danger: #dc2626;
+      --bg-sidebar-stat: rgba(0, 0, 0, 0.03);
+      --bg-select: #ffffff;
+      --border-select: #e4e4e7;
+      --bg-group-header: rgba(0, 0, 0, 0.02);
+      --border-file-item: rgba(0, 0, 0, 0.04);
+      --bg-action-bar: rgba(255, 255, 255, 0.95);
+      --bg-action-toggle: #f4f4f5;
+      --border-action-toggle: #e4e4e7;
     }
 
     body {
-      background: var(--bg-dark);
+      background: var(--bg-body);
       color: var(--text-main);
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       margin: 0;
@@ -24,6 +51,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      transition: background-color 0.3s, color 0.3s;
     }
 
     header {
@@ -66,7 +94,7 @@
     }
 
     .stat-card {
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--bg-sidebar-stat);
       border-radius: 8px;
       padding: 15px;
       border-left: 4px solid var(--color-success);
@@ -108,9 +136,9 @@
     }
 
     .rule-select {
-      background: #27272a;
-      border: 1px solid #3f3f46;
-      color: white;
+      background: var(--bg-select);
+      border: 1px solid var(--border-select);
+      color: var(--text-main);
       border-radius: 6px;
       padding: 8px;
       font-size: 13px;
@@ -130,10 +158,11 @@
       border: 1px solid var(--border-color);
       border-radius: 10px;
       overflow: hidden;
+      transition: background-color 0.3s, border-color 0.3s;
     }
 
     .group-header {
-      background: rgba(255, 255, 255, 0.02);
+      background: var(--bg-group-header);
       padding: 12px 15px;
       border-bottom: 1px solid var(--border-color);
       display: flex;
@@ -141,18 +170,21 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 10px;
+      transition: background-color 0.3s, border-color 0.3s;
     }
 
     .group-title {
       font-size: 14px;
       font-weight: 600;
-      color: #f4f4f5;
+      color: var(--text-main);
+      transition: color 0.3s;
     }
 
     .group-meta {
       font-size: 12px;
       color: var(--text-dim);
       word-break: break-all;
+      transition: color 0.3s;
     }
 
     .file-list {
@@ -164,8 +196,9 @@
       align-items: center;
       justify-content: space-between;
       padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid var(--border-file-item);
       min-width: 0;
+      transition: border-color 0.3s;
     }
     .file-item:last-child {
       border-bottom: none;
@@ -182,9 +215,10 @@
     .file-path {
       font-family: monospace;
       font-size: 13px;
-      color: #e4e4e7;
+      color: var(--text-main);
       word-break: break-all;
       line-height: 1.4;
+      transition: color 0.3s;
     }
 
     .file-date {
@@ -192,16 +226,18 @@
       color: var(--text-dim);
       margin-left: 10px;
       flex-shrink: 0;
+      transition: color 0.3s;
     }
 
     .action-toggle {
       display: flex;
-      background: #27272a;
+      background: var(--bg-action-toggle);
       border-radius: 20px;
       padding: 2px;
-      border: 1px solid #3f3f46;
+      border: 1px solid var(--border-action-toggle);
       flex-shrink: 0;
       margin-left: 20px;
+      transition: background-color 0.3s, border-color 0.3s;
     }
 
     .action-btn {
@@ -248,7 +284,7 @@
 
     /* Fixed Bottom Action Bar */
     .action-bar {
-      background: rgba(20, 20, 25, 0.9);
+      background: var(--bg-action-bar);
       border-top: 1px solid var(--border-color);
       position: fixed;
       bottom: 0;
@@ -258,9 +294,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.15);
       backdrop-filter: blur(10px);
       z-index: 100;
+      transition: background-color 0.3s, border-color 0.3s;
     }
 
     .action-bar-info {
@@ -281,6 +318,28 @@
       background: #059669;
     }
 
+    .theme-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+    .theme-btn:hover {
+      background-color: var(--bg-sidebar-stat);
+      transform: scale(1.05);
+    }
+    .theme-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+    }
+
     @media (max-width: 768px) {
       .layout-container {
         grid-template-columns: 1fr;
@@ -292,9 +351,12 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>重复文件清理控制台</h1>
-    <p class="subtitle">读取查重报告，轻松管理并回收多余冗余文件。</p>
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div>
+      <h1>重复文件清理控制台</h1>
+      <p class="subtitle">读取查重报告，轻松管理并回收多余冗余文件。</p>
+    </div>
+    <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="切换主题"></button>
   </header>
 
   <div class="layout-container">
@@ -540,7 +602,44 @@
       }
     }
 
-    window.onload = loadData;
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+      updateThemeToggleButton(theme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeToggleButton(newTheme);
+    }
+
+    function updateThemeToggleButton(theme) {
+      const toggleBtn = document.getElementById('theme-toggle');
+      if (!toggleBtn) return;
+      if (theme === 'dark') {
+        toggleBtn.innerHTML = `
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707-.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+          </svg>
+        `;
+      } else {
+        toggleBtn.innerHTML = `
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        `;
+      }
+    }
+
+    window.onload = () => {
+      initTheme();
+      loadData();
+    };
   </script>
 </body>
 </html>
