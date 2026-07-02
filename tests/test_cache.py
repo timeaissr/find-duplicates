@@ -106,8 +106,11 @@ def test_cache_schema_validation_and_recreate(tmp_path):
     cache = FileCache(str(db_file))
     cursor = cache.conn.cursor()
     cursor.execute("PRAGMA table_info(file_cache)")
-    columns = {row[1] for row in cursor.fetchall()}
+    rows = cursor.fetchall()
+    columns = {row[1] for row in rows}
+    pk_columns = {row[1] for row in rows if row[5] > 0}
     assert columns == {"filepath", "size", "mtime", "hash", "algorithm"}
+    assert pk_columns == {"filepath", "algorithm"}
     
     # 确认旧数据已经被清空
     cursor.execute("SELECT COUNT(*) FROM file_cache")
@@ -133,6 +136,6 @@ def test_cache_algorithm_isolation(cache_db, tmp_path):
 
     # 读取 blake3 时，命中新值
     assert cache_db.get_hash(file_path, "blake3") == "blake3_hash_val"
-    # 读取 xxh3 时，由于 PRIMARY KEY 覆盖，旧的已不存在
-    assert cache_db.get_hash(file_path, "xxh3") is None
+    # 读取 xxh3 时，由于是联合主键，旧的 xxh3 缓存仍然存在且能命中
+    assert cache_db.get_hash(file_path, "xxh3") == "xxh3_hash_val"
 

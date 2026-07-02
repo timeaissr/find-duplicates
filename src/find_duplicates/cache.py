@@ -24,20 +24,24 @@ class FileCache:
         try:
             cursor = self.conn.cursor()
             cursor.execute("PRAGMA table_info(file_cache)")
-            columns = {row[1] for row in cursor.fetchall()}
+            rows = cursor.fetchall()
+            columns = {row[1] for row in rows}
+            pk_columns = {row[1] for row in rows if row[5] > 0}
             
             expected_columns = {"filepath", "size", "mtime", "hash", "algorithm"}
+            expected_pks = {"filepath", "algorithm"}
             
-            if columns != expected_columns:
+            if columns != expected_columns or pk_columns != expected_pks:
                 with self.conn:
                     self.conn.execute("DROP TABLE IF EXISTS file_cache")
                     self.conn.execute("""
                         CREATE TABLE file_cache (
-                            filepath TEXT PRIMARY KEY,
+                            filepath TEXT,
                             size INTEGER,
                             mtime REAL,
                             hash TEXT,
-                            algorithm TEXT
+                            algorithm TEXT,
+                            PRIMARY KEY (filepath, algorithm)
                         )
                     """)
         except sqlite3.Error as e:
