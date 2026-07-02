@@ -1,8 +1,6 @@
 # find_duplicates package
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import version
 
-try:
-    __version__ = version("find-duplicates")
-except PackageNotFoundError:
-    __version__ = "0.5.0"
+__version__ = version("find-duplicates")
+
 
