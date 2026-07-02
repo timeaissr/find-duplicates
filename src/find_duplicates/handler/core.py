@@ -52,7 +52,7 @@ def main():
     from .web import run_web_handler
     
     parser = argparse.ArgumentParser(
-        description="重复文件选择处理器 (Duplicates Handler) - 安全清理冗余文件"
+        description="重复文件选择处理器 - 安全清理冗余文件"
     )
     parser.add_argument("--report", required=True, help="查重生成的 JSON 报告文件路径")
     parser.add_argument("--web", action="store_true", help="启用网页模式启动本地服务及 GUI 交互")
