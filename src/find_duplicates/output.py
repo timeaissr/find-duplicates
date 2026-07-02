@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def write_results_to_file(
-    output_path, duplicates, elapsed_time, total_files, include_dirs
+    output_path, duplicates, elapsed_time, total_files, include_dirs, algorithm="xxh3"
 ):
     """将查重结果写入到指定的文件，支持 TXT, JSON, CSV 格式。"""
     path = Path(output_path)
@@ -20,6 +20,7 @@ def write_results_to_file(
                 "total_files": total_files,
                 "duplicate_groups": len(duplicates),
                 "scan_folders": [str(Path(d).resolve()) for d in include_dirs],
+                "algorithm": algorithm,
             },
             "duplicates": duplicates,
         }
@@ -35,6 +36,7 @@ def write_results_to_file(
                     writer.writerow([group_idx, hsh, file_path])
 
     elif suffix == ".txt":
+        algo_name = "XXH3-128" if algorithm == "xxh3" else algorithm.upper()
         with path.open("w", encoding="utf-8") as f:
             f.write(
                 f"扫描时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n"
@@ -48,7 +50,7 @@ def write_results_to_file(
                 f.write(f"扫描完成：共发现 {len(duplicates)} 组重复文件。\n")
                 f.write("==========================================\n")
                 for hsh, paths in duplicates.items():
-                    f.write(f"\n哈希值 (XXH3-128): {hsh}\n")
+                    f.write(f"\n{algo_name}: {hsh}\n")
                     for file_path in paths:
                         f.write(f"  - {file_path}\n")
                 f.write("==========================================\n")

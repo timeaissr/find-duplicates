@@ -33,7 +33,7 @@ def format_size(size_in_bytes: int) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="使用 XXH3-128 算法在多个文件夹中查找内容重复的文件。"
+        description="使用 XXH3-128 或 BLAKE3 算法在多个文件夹中查找内容重复的文件。"
     )
 
     parser.add_argument(
@@ -215,8 +215,9 @@ def main():
         else:
             print(f"扫描完成：共发现 {len(duplicates)} 组重复文件。")
             print("==========================================")
+            algo_name = "XXH3-128" if args.algorithm == "xxh3" else args.algorithm.upper()
             for hsh, paths in duplicates.items():
-                print(f"\n哈希值 (XXH3-128): {hsh}")
+                print(f"\n{algo_name}: {hsh}")
                 for path in paths:
                     print(f"  - {path}")
             print("==========================================")
@@ -234,7 +235,7 @@ def main():
     if outputs:
         for out_path in outputs:
             write_results_to_file(
-                out_path, duplicates, elapsed_time, total_files, includes
+                out_path, duplicates, elapsed_time, total_files, includes, algorithm=args.algorithm
             )
 
 
