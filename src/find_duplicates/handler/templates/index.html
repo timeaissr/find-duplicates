@@ -139,6 +139,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .group-title {
@@ -150,6 +152,7 @@
     .group-meta {
       font-size: 12px;
       color: var(--text-dim);
+      word-break: break-all;
     }
 
     .file-list {
@@ -276,6 +279,15 @@
     }
     .action-bar-submit:hover {
       background: #059669;
+    }
+
+    @media (max-width: 768px) {
+      .layout-container {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        align-self: stretch;
+      }
     }
   </style>
 </head>
@@ -406,7 +418,7 @@
         card.innerHTML = `
           <div class="group-header">
             <span class="group-title">重复组 #${index++}</span>
-            <span class="group-meta">单文件大小: ${sizeStr} | 哈希: ${hsh.substring(0, 16)}...</span>
+            <span class="group-meta">单文件大小: ${sizeStr} | 哈希: ${hsh}</span>
           </div>
           <div class="file-list">
             ${fileItemsHtml}
