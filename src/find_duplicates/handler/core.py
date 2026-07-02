@@ -54,7 +54,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="重复文件选择处理器 (Duplicates Handler) - 安全清理冗余文件"
     )
-    parser.add_argument("-r", "--report", required=True, help="查重生成的 JSON 报告文件路径")
+    parser.add_argument("--report", required=True, help="查重生成的 JSON 报告文件路径")
     parser.add_argument("--web", action="store_true", help="启用网页模式启动本地服务及 GUI 交互")
     parser.add_argument("--port", type=int, default=52342, help="Web 服务器绑定的端口（默认: 52342）")
     parser.add_argument("--host", default="127.0.0.1", help="Web 服务器绑定的 Host（默认: 127.0.0.1）")

@@ -98,11 +98,11 @@ find-duplicates/
 
 ```bash
 # 用法：
-python duplicates_handler.py -r <path_to_json_report> [参数]
+python duplicates_handler.py --report <path_to_json_report> [参数]
 ```
 
 参数列表：
-* `-r <path_to_json_report>`, `--report <path_to_json_report>`: 必填。查重扫描生成的 JSON 报告文件路径。
+* `--report <path_to_json_report>`: 必填。查重扫描生成的 JSON 报告文件路径。
 * `--web`: 可选。启用网页版界面，自动启动本地 Web 服务并在浏览器中打开 Web GUI。
 * `--port`: 可选。Web 服务绑定的端口（默认随机高端口或 `52342`）。
 * `--host`: 可选。Web 服务绑定的 Host（默认 `127.0.0.1`）。
@@ -120,11 +120,11 @@ python duplicates_handler.py -r <path_to_json_report> [参数]
 
 ### 3.2 手动验证 (Manual Verification)
 1. **CLI 模式测试**：
-   * 运行 `python duplicates_handler.py -r test_report.json`。
+   * 运行 `python duplicates_handler.py --report test_report.json`。
    * 测试逐组输入数字选择保留，测试输入 `s` 跳过，测试最终确认。
    * 确认文件被正确移动至系统回收站，且未被物理粉碎。
 2. **Web 模式测试**：
-   * 运行 `python duplicates_handler.py -r test_report.json --web`。
+   * 运行 `python duplicates_handler.py --report test_report.json --web`。
    * 确认系统自动启动浏览器并载入页面。
    * 测试手动在卡片上切换“保留/回收”状态，并应用批量选择规则。
    * 点击“执行清理”，确认页面刷新，被清理的文件组已消失，且后台确认文件成功移至回收站。
