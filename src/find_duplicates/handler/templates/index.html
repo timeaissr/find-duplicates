@@ -381,14 +381,14 @@
         card.id = `group-${hsh}`;
 
         let fileItemsHtml = '';
-        files.forEach(file => {
+        files.forEach((file, fileIdx) => {
           const isKeep = (selection.keep === file.path);
           const badgeClass = isKeep ? 'badge-keep' : 'badge-trash';
           const badgeText = isKeep ? '保留' : '回收';
           const dateStr = new Date(file.mtime * 1000).toLocaleString();
 
           fileItemsHtml += `
-            <div class="file-item" id="file-${hsh}-${btoa(file.path)}">
+            <div class="file-item" id="file-${hsh}-${fileIdx}">
               <div class="file-path-wrapper">
                 <span class="${badgeClass}">${badgeText}</span>
                 <span class="file-path" title="${file.path}">${file.path}</span>
