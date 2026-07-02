@@ -71,3 +71,25 @@ def test_scanner_with_exclusions(tmp_path):
     # 应该找不到重复，因为 file_b 被排除了，总共只扫描到 1 个文件
     assert len(duplicates) == 0
     assert total_files == 1
+
+
+def test_scanner_with_blake3(tmp_path):
+    dir1 = tmp_path / "dir1"
+    dir1.mkdir()
+    f1 = dir1 / "f1.txt"
+    f1.write_text("same content")
+    f2 = dir1 / "f2.txt"
+    f2.write_text("same content")
+
+    gen = scan_duplicates_generator([str(dir1)], [], algorithm="blake3")
+    while True:
+        try:
+            next(gen)
+        except StopIteration as e:
+            duplicates, _, _, _ = e.value
+            break
+
+    # 验证产生了一组重复且哈希长度为 64 (BLAKE3 hex)
+    assert len(duplicates) == 1
+    hsh = list(duplicates.keys())[0]
+    assert len(hsh) == 64

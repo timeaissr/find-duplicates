@@ -66,6 +66,13 @@ def main():
         help="指定 SQLite 缓存文件路径。若不指定，则不启用缓存（退化为完全物理扫描）",
     )
 
+    parser.add_argument(
+        "--algorithm",
+        choices=["xxh3", "blake3"],
+        default="xxh3",
+        help="指定查重使用的哈希算法：xxh3 (默认, XXH3-128) 或 blake3 (BLAKE3)",
+    )
+
     args = parser.parse_args()
 
     includes = args.include if args.include else []
@@ -112,7 +119,7 @@ def main():
 
             # 调用扫描生成器
             scanner_gen = scan_duplicates_generator(
-                includes, excludes, cache=cache, cache_file_path=cache_file
+                includes, excludes, cache=cache, cache_file_path=cache_file, algorithm=args.algorithm
             )
 
             while True:

@@ -5,7 +5,7 @@ from .cache import FileCache
 
 
 def scan_duplicates_generator(
-    include_dirs, exclude_dirs, cache: FileCache = None, cache_file_path: str = None
+    include_dirs, exclude_dirs, cache: FileCache = None, cache_file_path: str = None, algorithm: str = "xxh3"
 ):
     """
     使用 XXH3-128 算法查找重复文件。
@@ -74,19 +74,23 @@ def scan_duplicates_generator(
         try:
             file_hash = None
             if cache:
-                file_hash = cache.get_hash(path)
+                file_hash = cache.get_hash(path, algorithm)
                 if file_hash:
                     cache_hits += 1
                     is_cache_hit = True
 
             if file_hash is None:
-                hasher = xxhash.xxh3_128()
+                if algorithm == "blake3":
+                    from blake3 import blake3
+                    hasher = blake3()
+                else:
+                    hasher = xxhash.xxh3_128()
                 with path.open("rb") as f:
                     while chunk := f.read(chunk_size):
                         hasher.update(chunk)
                 file_hash = hasher.hexdigest()
                 if cache:
-                    cache.update_hash(path, file_hash)
+                    cache.update_hash(path, file_hash, algorithm)
 
             hash_map[file_hash].append(path_str)
             yield (
