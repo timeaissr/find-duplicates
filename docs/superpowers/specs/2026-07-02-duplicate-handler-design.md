@@ -1,6 +1,6 @@
 # 重复文件处理器设计方案 (Duplicate Files Handler Design Spec)
 
-本方案设计了一个名为 `find-duplicates-handler` 的独立处理程序。它在 `find-duplicates` 扫描出重复文件并生成 JSON 报告后，读取该报告进行下一步的交互式处理。
+本方案设计了一个名为 `duplicates-handler` 的独立处理程序。它在 `find-duplicates` 扫描出重复文件并生成 JSON 报告后，读取该报告进行下一步的交互式处理。
 
 ## 1. 目标与背景
 
@@ -13,14 +13,36 @@
 
 ## 2. 系统设计
 
-### 2.1 依赖关系
+### 2.1 目录结构与模块划分
+
+为了保持清晰的包依赖关系与模块划分，本处理器的所有实现代码均置于 `src/find_duplicates/handler` 子包下，避免污染主查重工具的根级文件。
+
+项目的新增目录结构如下：
+```text
+find-duplicates/
+├── duplicates_handler.py             # [NEW] 根目录下统一启动入口脚本
+├── pyproject.toml                    # 依赖管理，新增 send2trash 依赖并配置入口命令
+├── src/
+│   └── find_duplicates/
+│       └── handler/                  # [NEW] 处理器专属包目录
+│           ├── __init__.py           # 包初始化文件
+│           ├── core.py               # 核心逻辑：JSON解析、安全性检查、物理回收
+│           ├── cli.py                # 命令行交互界面渲染及控制循环
+│           ├── web.py                # 本地 Web 服务后台 (基于 http.server)
+│           └── templates/            # 前端资源目录
+│               └── index.html        # 单页面前端 UI 模板 (HTML/CSS/JS)
+└── tests/
+    └── test_handler.py               # [NEW] 处理器单元测试
+```
+
+### 2.2 依赖关系
 
 在项目已有的依赖基础（`xxhash`, `rich`）上，引入一个新的第三方库：
 * **`send2trash`** (版本 `>=1.8.0`)：用于跨平台、无感地将文件移至操作系统的回收站（Trash / Recycle Bin），支持 Windows, macOS, Linux。
 
-### 2.2 核心处理器 (`src/find_duplicates/processor.py`)
+### 2.3 核心处理器 (`src/find_duplicates/handler/core.py`)
 
-封装底层的数据操作 and 安全性检查：
+封装底层的数据操作与安全性检查：
 1. **输入解析**：读取并反序列化查重工具导出的 `.json` 报告文件。
 2. **安全性校验**：
    * 在执行任何删除/移动操作前，检查目标路径的文件在磁盘上是否依然存在且为普通文件。
@@ -28,7 +50,7 @@
 3. **物理回收**：遍历标记为回收的文件，调用 `send2trash.send2trash(path)` 执行操作。
 4. **统计反馈**：计算成功回收的文件数量，累加这些文件的大小，输出实际释放的空间量。
 
-### 2.3 终端交互界面 (`src/find_duplicates/handler_cli.py`)
+### 2.4 终端交互界面 (`src/find_duplicates/handler/cli.py`)
 
 默认的交互界面，面向命令行爱好者：
 * **分组渲染**：利用 `rich` 在控制台渲染分组，显示每一组文件的序号、大小、修改时间及绝对路径。
@@ -48,12 +70,16 @@
   * 保留路径深度最长的文件。
 * **最终确认**：在用户处理完所有组（或选择提前应用规则）后，在控制台打印待回收文件的清单与大小统计，提示 `确认将以上 X 个文件移至回收站？(y/n)`。用户确认后执行操作。
 
-### 2.4 本地网页服务 (`src/find_duplicates/handler_web.py`)
+### 2.5 本地网页服务与前端模板 (`src/find_duplicates/handler/web.py`, `src/find_duplicates/handler/templates/index.html`)
 
 提供零外部依赖的轻量级 Web 服务：
 * **服务器引擎**：使用 Python 标准库的 `http.server.BaseHTTPRequestHandler` 编写，不引入 FastAPI/Flask 等重型库。
+* **网页前端 SPA (`src/find_duplicates/handler/templates/index.html`)**：
+  * 编写单文件 HTML 并作为模板文件由 `web.py` 在 `GET /` 时进行读取并加载，内含 Vanilla CSS 和 JavaScript。
+  * **视觉设计**：深色现代极简风格 (Dark Mode)，使用毛玻璃卡片 (Glassmorphism) 和圆角布局，配备醒目的状态色（绿色代表 Keep，红色代表 Trash）。
+  * **客户端规则预估**：用户在侧边栏切换批量选择规则，JS 会遍历所有重复组并自动更改选中状态，在界面上直接预览。
+  * **底栏信息**：动态计算并显示“已选择回收 X 个文件，释放 Y MB 空间”。
 * **接口定义**：
-  * `GET /`：返回单文件 HTML 网页。
   * `GET /api/data`：返回包含重复文件数据、汇总统计信息的 JSON 结构。
   * `POST /api/action`：接收前端发送的动作决策 JSON，如：
     ```json
@@ -68,18 +94,11 @@
     ```
     后端执行核心校验，确认无误后执行 `send2trash`。
 
-### 2.5 网页前端 SPA
-
-编写单文件 HTML 并作为模板文件进行加载，内嵌 CSS 和 Vanilla JS。
-* **视觉设计**：深色现代极简风格 (Dark Mode)，使用毛玻璃卡片 (Glassmorphism) 和圆角布局，配备醒目的状态色（绿色代表 Keep，红色代表 Trash）。
-* **客户端规则预估**：用户在侧边栏切换批量选择规则（例如“保留修改时间最早”），JS 会遍历所有重复组并自动更改选中状态，在界面上直接预览。
-* **底栏信息**：动态计算并显示“已选择回收 X 个文件，释放 Y MB 空间”。
-
-### 2.6 统一启动入口 (`find_duplicates_handler.py` 位于项目根目录)
+### 2.6 统一启动入口 (`duplicates_handler.py` 位于项目根目录)
 
 ```bash
 # 用法：
-python find_duplicates_handler.py <path_to_json_report> [参数]
+python duplicates_handler.py <path_to_json_report> [参数]
 ```
 
 参数列表：
@@ -97,15 +116,15 @@ python find_duplicates_handler.py <path_to_json_report> [参数]
 1. **JSON 报告解析**：验证正确解析各组重复文件以及提取元数据（大小、哈希）。
 2. **安全防空规则校验**：测试如果尝试回收某组的全部文件，核心处理器是否正确拦截并抛出异常。
 3. **批量规则算法**：对包含不同修改时间、路径层级的文件组，验证“保留最早/最晚/最短路径”规则生成的动作指令是否正确。
-4. **Mock 回收站测试**：使用 Mock 模拟 `send2trash.send2trash` 物理操作，验证调用路径和成功时的体积统计。
+4. **Mock 回收站测试**：使用 Mock 模拟 `send2trash.send2trash` 物理操作，验证调用路径与成功时的体积统计。
 
 ### 3.2 手动验证 (Manual Verification)
 1. **CLI 模式测试**：
-   * 运行 `python find_duplicates_handler.py test_report.json`。
+   * 运行 `python duplicates_handler.py test_report.json`。
    * 测试逐组输入数字选择保留，测试输入 `s` 跳过，测试最终确认。
    * 确认文件被正确移动至系统回收站，且未被物理粉碎。
 2. **Web 模式测试**：
-   * 运行 `python find_duplicates_handler.py test_report.json --web`。
+   * 运行 `python duplicates_handler.py test_report.json --web`。
    * 确认系统自动启动浏览器并载入页面。
    * 测试手动在卡片上切换“保留/回收”状态，并应用批量选择规则。
    * 点击“执行清理”，确认页面刷新，被清理的文件组已消失，且后台确认文件成功移至回收站。
