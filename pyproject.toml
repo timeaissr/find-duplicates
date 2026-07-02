@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "xxhash>=3.8.0",
     "rich>=13.7.0",
+    "send2trash>=1.8.0",
 ]
 
 [project.scripts]
