@@ -14,7 +14,7 @@ wheels = [
 [[package]]
 name = "find-duplicates"
 version = "0.5.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "rich" },
     { name = "send2trash" },

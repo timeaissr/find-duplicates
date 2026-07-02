@@ -10,6 +10,8 @@ dependencies = [
 
 [project.scripts]
 find-duplicates = "find_duplicates.cli:main"
+duplicates-handler = "find_duplicates.handler.core:main"
+
 
 [dependency-groups]
 dev = [
@@ -20,3 +22,8 @@ dev = [
 pythonpath = [
     "src"
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+

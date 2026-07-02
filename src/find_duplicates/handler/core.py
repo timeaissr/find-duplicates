@@ -44,3 +44,30 @@ def recycle_files(trash_paths: list[str]) -> tuple[int, int]:
                 print(f"警告：物理移动文件至回收站失败 {path_str}，错误原因：{e}", file=sys.stderr)
     return count, reclaimed_bytes
 
+
+def main():
+    import argparse
+    import sys
+    from .cli import run_cli_handler
+    from .web import run_web_handler
+    
+    parser = argparse.ArgumentParser(
+        description="重复文件选择处理器 (Duplicates Handler) - 安全清理冗余文件"
+    )
+    parser.add_argument("report", help="查重生成的 JSON 报告文件路径")
+    parser.add_argument("--web", action="store_true", help="启用网页模式启动本地服务及 GUI 交互")
+    parser.add_argument("--port", type=int, default=52342, help="Web 服务器绑定的端口（默认: 52342）")
+    parser.add_argument("--host", default="127.0.0.1", help="Web 服务器绑定的 Host（默认: 127.0.0.1）")
+    
+    args = parser.parse_args()
+    report_path = Path(args.report)
+    if not report_path.is_file():
+        print(f"[错误] 报告文件不存在: '{args.report}'", file=sys.stderr)
+        sys.exit(1)
+        
+    if args.web:
+        run_web_handler(str(report_path), args.host, args.port)
+    else:
+        run_cli_handler(str(report_path))
+
+
