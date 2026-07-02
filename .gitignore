@@ -38,3 +38,8 @@ Thumbs.db
 # Cache databases
 cache.db
 *.db
+
+# Agent/Antigravity patterns
+.agents/
+.superpowers/
+skills-lock.json
