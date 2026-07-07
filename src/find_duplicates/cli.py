@@ -91,11 +91,6 @@ def main():
 
     console = Console()
 
-    # 初始化缓存
-    cache = None
-    if cache_file:
-        cache = FileCache(cache_file)
-
     start_time = time.perf_counter()
     duplicates = {}
     cache_hits = 0
@@ -103,6 +98,11 @@ def main():
     file_list = []
 
     try:
+        # 初始化缓存
+        cache = None
+        if cache_file:
+            cache = FileCache(cache_file)
+
         # 使用 rich progress bar
         with Progress(
             SpinnerColumn(),
@@ -159,7 +159,7 @@ def main():
                     break
 
     except RuntimeError as e:
-        console.print(f"[bold red][错误] {e}[/bold red]", sys.stderr)
+        Console(stderr=True).print(f"[bold red][错误] {e}[/bold red]")
         if cache:
             cache.close()
         sys.exit(1)
