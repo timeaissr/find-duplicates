@@ -139,3 +139,12 @@ def test_cache_algorithm_isolation(cache_db, tmp_path):
     # 读取 xxh3 时，由于是联合主键，旧的 xxh3 缓存仍然存在且能命中
     assert cache_db.get_hash(file_path, "xxh3") == "xxh3_hash_val"
 
+
+def test_cache_init_failure():
+    import pytest
+    # 使用包含不存在父目录的路径，强制 sqlite3 抛出 OperationalError
+    with pytest.raises(RuntimeError) as exc_info:
+        FileCache("nonexistent_dir_12345/cache.db")
+    assert "无法初始化缓存数据库" in str(exc_info.value)
+
+

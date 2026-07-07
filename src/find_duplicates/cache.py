@@ -13,10 +13,13 @@ class FileCache:
             self.conn = sqlite3.connect(db_path)
             self._init_db()
         except sqlite3.Error as e:
-            print(
-                f"[警告] 无法初始化缓存数据库: {e}，将无法使用缓存功能。",
-                file=sys.stderr,
-            )
+            if self.conn:
+                try:
+                    self.conn.close()
+                except sqlite3.Error:
+                    pass
+                self.conn = None
+            raise RuntimeError(f"无法初始化缓存数据库: {e}")
 
     def _init_db(self):
         if not self.conn:
@@ -39,16 +42,13 @@ class FileCache:
                             filepath TEXT,
                             size INTEGER,
                             mtime REAL,
-                            hash TEXT,
                             algorithm TEXT,
+                            hash TEXT,
                             PRIMARY KEY (filepath, algorithm)
                         )
                     """)
         except sqlite3.Error as e:
-            print(
-                f"[警告] 无法初始化缓存数据库: {e}，将无法使用缓存功能。",
-                file=sys.stderr,
-            )
+            raise RuntimeError(f"无法初始化缓存数据库表结构: {e}")
 
     def get_hash(self, filepath: Path, algorithm: str) -> str | None:
         """从缓存中检索哈希值，如果文件未修改且算法匹配则返回哈希，否则返回 None。"""
@@ -87,8 +87,8 @@ class FileCache:
             normalized_path = filepath.resolve().as_posix()
             with self.conn:
                 self.conn.execute(
-                    "INSERT OR REPLACE INTO file_cache (filepath, size, mtime, hash, algorithm) VALUES (?, ?, ?, ?, ?)",
-                    (normalized_path, stat.st_size, stat.st_mtime, file_hash, algorithm),
+                    "INSERT OR REPLACE INTO file_cache (filepath, size, mtime, algorithm, hash) VALUES (?, ?, ?, ?, ?)",
+                    (normalized_path, stat.st_size, stat.st_mtime, algorithm, file_hash),
                 )
         except (OSError, sqlite3.Error):
             pass
