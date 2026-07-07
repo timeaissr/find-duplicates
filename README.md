@@ -27,8 +27,6 @@
 ```text
 find-duplicates/
 ├── pyproject.toml                      # 依赖管理和打包入口配置
-├── find_duplicates_xxh3_128.py         # 根目录查重扫描器快速启动脚本
-├── duplicates_handler.py               # 根目录清理处理器快速启动脚本
 ├── src/                                # 源码目录
 │   └── find_duplicates/                # 核心包
 │       ├── __init__.py                 # 版本和元数据 (基于 importlib.metadata 动态解析)
@@ -69,15 +67,10 @@ pip install xxhash rich send2trash pytest
 
 ### 1. 扫描重复文件 (`find-duplicates`)
 
-你可以通过以下两种方式运行扫描：
-1. **作为虚拟环境命令运行**（推荐）：
-   ```bash
-   uv run find-duplicates [参数]
-   ```
-2. **直接运行根目录包装脚本**：
-   ```bash
-   python find_duplicates_xxh3_128.py [参数]
-   ```
+你可以通过以下方式运行扫描：
+```bash
+uv run find-duplicates [参数]
+```
 
 #### 实例一：扫描单个或多个文件夹
 你可以通过多次传递 `-i` / `--include` 参数来指定多个扫描路径：
@@ -113,15 +106,10 @@ uv run find-duplicates -i /my/data -o reports/result.txt -o reports/result.json
 
 扫描出结果并生成 JSON 报告后，可使用 `duplicates-handler` 对文件进行清理。
 
-你可以通过以下两种方式运行：
-1. **作为虚拟环境命令运行**（推荐）：
-   ```bash
-   uv run duplicates-handler --report <path_to_json> [参数]
-   ```
-2. **直接运行根目录包装脚本**：
-   ```bash
-   python duplicates_handler.py --report <path_to_json> [参数]
-   ```
+你可以通过以下方式运行：
+```bash
+uv run duplicates-handler --report <path_to_json> [参数]
+```
 
 #### 方式一：终端命令行交互清理 (CLI)
 处理器将逐组询问您保留哪一个文件，其余文件安全移入回收站：
