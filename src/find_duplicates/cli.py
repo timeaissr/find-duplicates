@@ -63,7 +63,7 @@ def main():
     parser.add_argument(
         "--cache-file",
         default=None,
-        help="指定 SQLite 缓存文件路径。若不指定，则不启用缓存（退化为完全物理扫描）",
+        help="指定 SQLite 缓存文件路径。若不指定，则不启用缓存（退化为完全物理扫描）。若指定但初始化失败，则报错并终止程序",
     )
 
     parser.add_argument(
