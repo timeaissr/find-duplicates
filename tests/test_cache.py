@@ -148,3 +148,21 @@ def test_cache_init_failure():
     assert "无法初始化缓存数据库" in str(exc_info.value)
 
 
+def test_cache_prune_stale_records_with_files(cache_db, tmp_path):
+    f1 = tmp_path / "file1.txt"
+    f2 = tmp_path / "file2.txt"
+
+    f1.write_text("1")
+    f2.write_text("2")
+
+    cache_db.update_hash(f1, "hash1", "xxh3")
+    cache_db.update_hash(f2, "hash2", "xxh3")
+
+    # 对 f1, f2 两个文件进行清理，但保留 f1 缓存
+    cache_db.prune_stale_records([str(f1), str(f2)], [f1])
+
+    # f1 的缓存应保留，f2 因为不属于 keep_paths，已被清理
+    assert cache_db.get_hash(f1, "xxh3") == "hash1"
+    assert cache_db.get_hash(f2, "xxh3") is None
+
+

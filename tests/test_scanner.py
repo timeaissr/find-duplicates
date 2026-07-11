@@ -93,3 +93,68 @@ def test_scanner_with_blake3(tmp_path):
     assert len(duplicates) == 1
     hsh = list(duplicates.keys())[0]
     assert len(hsh) == 64
+
+
+def test_scanner_with_single_files(tmp_path):
+    file1 = tmp_path / "file1.txt"
+    file1.write_text("duplicate content")
+    file2 = tmp_path / "file2.txt"
+    file2.write_text("duplicate content")
+    file3 = tmp_path / "unique.txt"
+    file3.write_text("unique content")
+
+    gen = scan_duplicates_generator([str(file1), str(file2), str(file3)], [])
+    while True:
+        try:
+            next(gen)
+        except StopIteration as e:
+            duplicates, _, total_files, _ = e.value
+            break
+
+    assert total_files == 3
+    assert len(duplicates) == 1
+    hashes = list(duplicates.keys())
+    assert len(duplicates[hashes[0]]) == 2
+    assert str(file1.resolve()) in duplicates[hashes[0]]
+    assert str(file2.resolve()) in duplicates[hashes[0]]
+
+
+def test_scanner_with_single_files_and_exclusions(tmp_path):
+    file1 = tmp_path / "file1.txt"
+    file1.write_text("duplicate content")
+    file2 = tmp_path / "file2.txt"
+    file2.write_text("duplicate content")
+
+    gen = scan_duplicates_generator([str(file1), str(file2)], [str(file2)])
+    while True:
+        try:
+            next(gen)
+        except StopIteration as e:
+            duplicates, _, total_files, _ = e.value
+            break
+
+    assert total_files == 1
+    assert len(duplicates) == 0
+
+
+def test_scanner_with_single_file_and_dir_mixed(tmp_path):
+    dir1 = tmp_path / "dir1"
+    dir1.mkdir()
+    file_in_dir = dir1 / "file_a.txt"
+    file_in_dir.write_text("common content")
+
+    file_outside = tmp_path / "file_b.txt"
+    file_outside.write_text("common content")
+
+    gen = scan_duplicates_generator([str(dir1), str(file_outside)], [])
+    while True:
+        try:
+            next(gen)
+        except StopIteration as e:
+            duplicates, _, total_files, _ = e.value
+            break
+
+    assert total_files == 2
+    assert len(duplicates) == 1
+    hashes = list(duplicates.keys())
+    assert len(duplicates[hashes[0]]) == 2
