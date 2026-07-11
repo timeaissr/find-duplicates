@@ -28,31 +28,38 @@ def scan_duplicates_generator(
 
     for root_dir in include_dirs:
         root_path = Path(root_dir).resolve()
-        if not root_path.is_dir():
-            # 这里不直接 print，但是如果需要警告，我们可以把它作为日志或生成器事件
-            # 为了兼容且保持解耦，我们可以忽略或者通过 yield 警告事件
+        if not root_path.exists():
             continue
 
-        if any(root_path.is_relative_to(exclude) for exclude in exclude_paths):
-            continue
+        if root_path.is_file() and not root_path.is_symlink():
+            if cache_file_path and root_path == Path(cache_file_path).resolve():
+                continue
+            if any(root_path.is_relative_to(exclude) for exclude in exclude_paths):
+                continue
+            if root_path not in seen_paths:
+                seen_paths.add(root_path)
+                file_list.append(root_path)
+        elif root_path.is_dir():
+            if any(root_path.is_relative_to(exclude) for exclude in exclude_paths):
+                continue
 
-        for path in root_path.rglob("*"):
-            if path.is_file() and not path.is_symlink():
-                resolved_path = path.resolve()
+            for path in root_path.rglob("*"):
+                if path.is_file() and not path.is_symlink():
+                    resolved_path = path.resolve()
 
-                if resolved_path in seen_paths:
-                    continue
+                    if resolved_path in seen_paths:
+                        continue
 
-                if cache_file_path and resolved_path == Path(cache_file_path).resolve():
-                    continue
+                    if cache_file_path and resolved_path == Path(cache_file_path).resolve():
+                        continue
 
-                if any(
-                    resolved_path.is_relative_to(exclude) for exclude in exclude_paths
-                ):
-                    continue
+                    if any(
+                        resolved_path.is_relative_to(exclude) for exclude in exclude_paths
+                    ):
+                        continue
 
-                seen_paths.add(resolved_path)
-                file_list.append(resolved_path)
+                    seen_paths.add(resolved_path)
+                    file_list.append(resolved_path)
 
     total_files = len(file_list)
     yield ("count_end", total_files)

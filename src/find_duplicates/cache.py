@@ -105,12 +105,20 @@ class FileCache:
             cursor = self.conn.cursor()
 
             for root_dir in include_dirs:
-                root_path_str = Path(root_dir).resolve().as_posix()
-                # 匹配目录本身或其子文件/子目录
-                cursor.execute(
-                    "SELECT filepath FROM file_cache WHERE filepath = ? OR filepath LIKE ?",
-                    (root_path_str, root_path_str + "/%"),
-                )
+                root_path = Path(root_dir).resolve()
+                root_path_str = root_path.as_posix()
+                if root_path.is_file():
+                    # 如果是文件，只比对精确路径
+                    cursor.execute(
+                        "SELECT filepath FROM file_cache WHERE filepath = ?",
+                        (root_path_str,),
+                    )
+                else:
+                    # 匹配目录本身或其子文件/子目录
+                    cursor.execute(
+                        "SELECT filepath FROM file_cache WHERE filepath = ? OR filepath LIKE ?",
+                        (root_path_str, root_path_str + "/%"),
+                    )
                 for row in cursor.fetchall():
                     cached_paths_in_scope.add(row[0])
 

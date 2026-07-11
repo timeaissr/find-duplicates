@@ -41,7 +41,7 @@ def main():
         "--include",
         action="append",
         required=True,
-        help="要包含（扫描）的文件夹路径（若有多个，请多次使用 -i 或 --include）",
+        help="要包含（扫描）的文件夹或文件路径（若有多个，请多次使用 -i 或 --include）",
     )
 
     parser.add_argument(
